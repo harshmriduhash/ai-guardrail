@@ -1,8 +1,11 @@
-import { mockStats, mockRequests } from '@/lib/mock-data';
+import { useState, useEffect } from 'react';
+import { fetchRequests } from '@/lib/api';
+import { useRealtimeRequests, useRealtimeDecisions } from '@/hooks/useRealtime';
 import { StatusBadge, ReasonBadge } from '@/components/StatusBadge';
-import { ViolationReason } from '@/types/governance';
 import { formatDistanceToNow } from 'date-fns';
-import { AlertTriangle, TrendingUp } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Loader2, Wifi } from 'lucide-react';
+
+type ViolationReason = 'PII_DETECTED' | 'TOKEN_LIMIT_EXCEEDED' | 'MODEL_NOT_ALLOWED' | 'KEYWORD_BLOCKED' | 'COST_LIMIT_EXCEEDED';
 
 const reasonDescriptions: Record<ViolationReason, string> = {
   PII_DETECTED: 'Personally identifiable information detected in prompt',
@@ -12,13 +15,79 @@ const reasonDescriptions: Record<ViolationReason, string> = {
   COST_LIMIT_EXCEEDED: 'Estimated cost exceeds configured limit'
 };
 
+interface RequestWithDecision {
+  id: string;
+  model: string;
+  prompt: string;
+  tokens_requested: number;
+  created_at: string;
+  llm_decisions: Array<{
+    decision: 'ALLOW' | 'BLOCK';
+    reasons: string[];
+    cost_estimate: number;
+  }>;
+}
+
 export default function Violations() {
-  const blockedRequests = mockRequests.filter(r => r.decision.decision === 'BLOCK');
-  const totalViolations = Object.values(mockStats.violationsByType).reduce((a, b) => a + b, 0);
+  const [requests, setRequests] = useState<RequestWithDecision[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Real-time subscriptions
+  const { requests: realtimeRequests } = useRealtimeRequests();
+  const { decisions: realtimeDecisions } = useRealtimeDecisions();
+
+  useEffect(() => {
+    loadRequests();
+  }, []);
+
+  const loadRequests = async () => {
+    try {
+      const data = await fetchRequests();
+      setRequests(data || []);
+    } catch (error) {
+      console.error('Failed to load requests:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Merge realtime data
+  const allRequests = [
+    ...realtimeRequests.map(r => ({
+      ...r,
+      llm_decisions: realtimeDecisions.has(r.id) 
+        ? [realtimeDecisions.get(r.id)!] 
+        : []
+    })),
+    ...requests
+  ];
+
+  const blockedRequests = allRequests.filter(r => r.llm_decisions?.[0]?.decision === 'BLOCK');
+  
+  const violationsByType = blockedRequests
+    .flatMap(r => r.llm_decisions?.[0]?.reasons || [])
+    .reduce((acc, reason) => {
+      acc[reason] = (acc[reason] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+  const totalViolations = Object.values(violationsByType).reduce((a, b) => a + b, 0);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
       <div className="mb-8">
+        <div className="flex items-center gap-2 text-muted-foreground text-sm font-mono mb-2">
+          <Wifi className="w-3 h-3 text-success" />
+          LIVE UPDATES
+        </div>
         <h1 className="text-3xl font-bold mb-1">Policy Violations</h1>
         <p className="text-muted-foreground">
           Requests blocked due to governance policy violations.
@@ -56,12 +125,15 @@ export default function Violations() {
             Violations by Type
           </div>
           <div className="space-y-2">
-            {Object.entries(mockStats.violationsByType).map(([reason, count]) => (
+            {Object.entries(violationsByType).map(([reason, count]) => (
               <div key={reason} className="flex items-center justify-between">
                 <ReasonBadge reason={reason as ViolationReason} />
                 <span className="font-mono text-sm">{count}</span>
               </div>
             ))}
+            {Object.keys(violationsByType).length === 0 && (
+              <p className="text-sm text-muted-foreground">No violations yet</p>
+            )}
           </div>
         </div>
       </div>
@@ -83,7 +155,7 @@ export default function Violations() {
                   <div className="flex items-center gap-2 mb-2">
                     <StatusBadge decision="BLOCK" />
                     <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(request.createdAt, { addSuffix: true })}
+                      {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
                     </span>
                   </div>
                   <p className="font-mono text-sm">{request.prompt}</p>
@@ -93,7 +165,7 @@ export default function Violations() {
                     {request.model}
                   </span>
                   <span className="text-xs font-mono text-muted-foreground">
-                    {request.tokensRequested.toLocaleString()} tokens
+                    {request.tokens_requested.toLocaleString()} tokens
                   </span>
                 </div>
               </div>
@@ -103,11 +175,11 @@ export default function Violations() {
                   Violation Reasons
                 </div>
                 <div className="space-y-1">
-                  {request.decision.reasons.map((reason, i) => (
+                  {request.llm_decisions?.[0]?.reasons?.map((reason, i) => (
                     <div key={i} className="flex items-center gap-2">
-                      <ReasonBadge reason={reason} />
+                      <ReasonBadge reason={reason as ViolationReason} />
                       <span className="text-sm text-muted-foreground">
-                        {reasonDescriptions[reason]}
+                        {reasonDescriptions[reason as ViolationReason] || reason}
                       </span>
                     </div>
                   ))}

@@ -1,86 +1,75 @@
 import { useState } from 'react';
 import { useDemoSession } from '@/context/DemoSessionContext';
-import { mockPolicies } from '@/lib/mock-data';
-import { ViolationReason, Decision } from '@/types/governance';
+import { evaluateLLMRequest } from '@/lib/api';
+import { StatusBadge, ReasonBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { StatusBadge, ReasonBadge } from '@/components/StatusBadge';
-import { Terminal, Play, ArrowRight, AlertTriangle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Terminal, Play, ArrowRight, AlertTriangle, Loader2, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+
+type ViolationReason = 'PII_DETECTED' | 'TOKEN_LIMIT_EXCEEDED' | 'MODEL_NOT_ALLOWED' | 'KEYWORD_BLOCKED' | 'COST_LIMIT_EXCEEDED';
 
 interface EvaluationResult {
-  decision: Decision;
+  decision: 'ALLOW' | 'BLOCK';
   reasons: ViolationReason[];
-  costEstimate: number;
-  evaluationTimeMs: number;
+  cost_estimate: number;
+  evaluation_time_ms: number;
+  request_id: string;
+  response?: string;
+  blocked?: boolean;
 }
 
 export default function ProxyTest() {
-  const { incrementProxyCount, remainingCalls } = useDemoSession();
+  const { session, refreshSession, remainingCalls } = useDemoSession();
   const [model, setModel] = useState('gpt-4');
   const [prompt, setPrompt] = useState('');
   const [maxTokens, setMaxTokens] = useState('512');
+  const [forwardToLLM, setForwardToLLM] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [result, setResult] = useState<EvaluationResult | null>(null);
 
-  const evaluateRequest = () => {
-    if (!prompt.trim() || remainingCalls <= 0) return;
+  const evaluateRequest = async () => {
+    if (!prompt.trim() || remainingCalls <= 0 || !session) return;
     
     setIsEvaluating(true);
-    const startTime = performance.now();
+    setResult(null);
     
-    // Simulate policy evaluation
-    setTimeout(() => {
-      const reasons: ViolationReason[] = [];
-      const tokens = parseInt(maxTokens) || 512;
+    try {
+      const response = await evaluateLLMRequest(
+        session.id,
+        model,
+        prompt,
+        parseInt(maxTokens) || 512,
+        forwardToLLM
+      );
       
-      // Check PII
-      const enabledPiiPolicy = mockPolicies.find(p => p.policyType === 'PII_BLOCK' && p.enabled);
-      if (enabledPiiPolicy) {
-        if (prompt.includes('@') || prompt.match(/\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}/) || prompt.match(/\d{3}-\d{2}-\d{4}/)) {
-          reasons.push('PII_DETECTED');
-        }
+      setResult(response);
+      
+      // Refresh session to get updated call count
+      await refreshSession();
+      
+      if (response.blocked) {
+        toast.warning('Request blocked by policy', {
+          description: `Violations: ${response.reasons.join(', ')}`
+        });
+      } else {
+        toast.success('Request allowed', {
+          description: forwardToLLM ? 'LLM response received' : 'Policy evaluation passed'
+        });
       }
-      
-      // Check keywords
-      const enabledKeywordPolicy = mockPolicies.find(p => p.policyType === 'PROMPT_KEYWORD_BLOCK' && p.enabled);
-      if (enabledKeywordPolicy) {
-        const blocked = ['password', 'api_key', 'secret', 'internal docs', 'confidential'];
-        if (blocked.some(kw => prompt.toLowerCase().includes(kw))) {
-          reasons.push('KEYWORD_BLOCKED');
-        }
-      }
-      
-      // Check model
-      const enabledModelPolicy = mockPolicies.find(p => p.policyType === 'MODEL_RESTRICTION' && p.enabled);
-      if (enabledModelPolicy) {
-        const blocked = ['gpt-3.5-turbo', 'claude-instant'];
-        if (blocked.includes(model)) {
-          reasons.push('MODEL_NOT_ALLOWED');
-        }
-      }
-      
-      // Check tokens
-      const enabledTokenPolicy = mockPolicies.find(p => p.policyType === 'TOKEN_LIMIT' && p.enabled);
-      if (enabledTokenPolicy && tokens > 4096) {
-        reasons.push('TOKEN_LIMIT_EXCEEDED');
-      }
-      
-      const endTime = performance.now();
-      
-      setResult({
-        decision: reasons.length > 0 ? 'BLOCK' : 'ALLOW',
-        reasons,
-        costEstimate: (tokens / 1000) * 0.03,
-        evaluationTimeMs: Math.round(endTime - startTime)
+    } catch (error) {
+      console.error('Evaluation failed:', error);
+      toast.error('Evaluation failed', {
+        description: error instanceof Error ? error.message : 'Please try again'
       });
-      
-      incrementProxyCount();
+    } finally {
       setIsEvaluating(false);
-    }, 200 + Math.random() * 300);
+    }
   };
 
   return (
@@ -88,7 +77,7 @@ export default function ProxyTest() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-1">Proxy Test Console</h1>
         <p className="text-muted-foreground">
-          Simulate LLM requests through the governance proxy.
+          Send real requests through the governance proxy to test policy evaluation.
         </p>
       </div>
 
@@ -118,9 +107,10 @@ export default function ProxyTest() {
                 <SelectContent>
                   <SelectItem value="gpt-4">gpt-4</SelectItem>
                   <SelectItem value="gpt-4-turbo">gpt-4-turbo</SelectItem>
-                  <SelectItem value="gpt-3.5-turbo">gpt-3.5-turbo (blocked)</SelectItem>
+                  <SelectItem value="gpt-3.5-turbo">gpt-3.5-turbo (blocked by policy)</SelectItem>
                   <SelectItem value="claude-3-opus">claude-3-opus</SelectItem>
-                  <SelectItem value="claude-instant">claude-instant (blocked)</SelectItem>
+                  <SelectItem value="claude-instant">claude-instant (blocked by policy)</SelectItem>
+                  <SelectItem value="google/gemini-2.5-flash">google/gemini-2.5-flash</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -148,6 +138,21 @@ export default function ProxyTest() {
                 className="font-mono"
               />
             </div>
+
+            <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-primary" />
+                <div>
+                  <Label htmlFor="forward-llm" className="cursor-pointer">Forward to LLM</Label>
+                  <p className="text-xs text-muted-foreground">Actually call the AI model if allowed</p>
+                </div>
+              </div>
+              <Switch 
+                id="forward-llm"
+                checked={forwardToLLM}
+                onCheckedChange={setForwardToLLM}
+              />
+            </div>
             
             <Button 
               onClick={evaluateRequest} 
@@ -155,7 +160,10 @@ export default function ProxyTest() {
               className="w-full"
             >
               {isEvaluating ? (
-                'Evaluating...'
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Evaluating...
+                </>
               ) : (
                 <>
                   <Play className="w-4 h-4 mr-2" />
@@ -186,7 +194,7 @@ export default function ProxyTest() {
                 <div className="flex items-center gap-4">
                   <StatusBadge decision={result.decision} className="text-base px-3 py-1.5" />
                   <span className="text-sm text-muted-foreground font-mono">
-                    {result.evaluationTimeMs}ms
+                    {result.evaluation_time_ms}ms
                   </span>
                 </div>
                 
@@ -227,15 +235,13 @@ export default function ProxyTest() {
                     <label className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
                       Cost Estimate
                     </label>
-                    <p className="font-mono text-lg mt-1">${result.costEstimate.toFixed(4)}</p>
+                    <p className="font-mono text-lg mt-1">${result.cost_estimate.toFixed(4)}</p>
                   </div>
                   <div>
                     <label className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
-                      Policies Checked
+                      Request ID
                     </label>
-                    <p className="font-mono text-lg mt-1">
-                      {mockPolicies.filter(p => p.enabled).length}
-                    </p>
+                    <p className="font-mono text-sm mt-1 truncate">{result.request_id.slice(0, 8)}...</p>
                   </div>
                 </div>
                 
@@ -253,11 +259,23 @@ export default function ProxyTest() {
                   </div>
                 )}
                 
-                {result.reasons.length === 0 && (
+                {result.reasons.length === 0 && !result.response && (
                   <div className="p-3 bg-success/10 border border-success/20 rounded-lg">
                     <p className="text-sm text-success">
                       ✓ All governance policies passed. Request would be forwarded to LLM provider.
                     </p>
+                  </div>
+                )}
+
+                {/* LLM Response */}
+                {result.response && (
+                  <div>
+                    <label className="text-xs font-mono text-muted-foreground uppercase tracking-wider block mb-2">
+                      LLM Response
+                    </label>
+                    <div className="p-4 bg-surface-sunken rounded-lg">
+                      <p className="text-sm whitespace-pre-wrap">{result.response}</p>
+                    </div>
                   </div>
                 )}
               </div>

@@ -6,10 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Shield, Lock, Activity, FileText } from 'lucide-react';
+import { Shield, Lock, Activity, FileText, Loader2 } from 'lucide-react';
 
 export function DemoGate() {
-  const { createSession } = useDemoSession();
+  const { createSession, isLoading } = useDemoSession();
   const [form, setForm] = useState<DemoAccessForm>({
     name: '',
     email: '',
@@ -18,10 +18,11 @@ export function DemoGate() {
     useCase: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateEmail = (email: string) => {
     const workEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const freeEmailDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'];
+    const freeEmailDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com'];
     const domain = email.split('@')[1]?.toLowerCase();
     
     if (!workEmailPattern.test(email)) return 'Invalid email format';
@@ -29,7 +30,7 @@ export function DemoGate() {
     return null;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: Record<string, string> = {};
     
@@ -43,8 +44,26 @@ export function DemoGate() {
       return;
     }
     
-    createSession(form);
+    setIsSubmitting(true);
+    try {
+      await createSession(form);
+    } catch {
+      // Error is handled in context
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span>Loading session...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -115,6 +134,7 @@ export function DemoGate() {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="Jane Smith"
                 className={errors.name ? 'border-destructive' : ''}
+                disabled={isSubmitting}
               />
               {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
             </div>
@@ -128,6 +148,7 @@ export function DemoGate() {
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="jane@company.com"
                 className={errors.email ? 'border-destructive' : ''}
+                disabled={isSubmitting}
               />
               {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
             </div>
@@ -140,6 +161,7 @@ export function DemoGate() {
                 onChange={(e) => setForm({ ...form, company: e.target.value })}
                 placeholder="Acme Corp"
                 className={errors.company ? 'border-destructive' : ''}
+                disabled={isSubmitting}
               />
               {errors.company && <p className="text-xs text-destructive">{errors.company}</p>}
             </div>
@@ -149,6 +171,7 @@ export function DemoGate() {
               <Select 
                 value={form.role} 
                 onValueChange={(val) => setForm({ ...form, role: val as DemoAccessForm['role'] })}
+                disabled={isSubmitting}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -171,11 +194,19 @@ export function DemoGate() {
                 onChange={(e) => setForm({ ...form, useCase: e.target.value })}
                 placeholder="Internal chatbots, customer support AI, code assistants..."
                 rows={3}
+                disabled={isSubmitting}
               />
             </div>
             
-            <Button type="submit" className="w-full" size="lg">
-              Access Demo Dashboard
+            <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating Session...
+                </>
+              ) : (
+                'Access Demo Dashboard'
+              )}
             </Button>
             
             <p className="text-xs text-center text-muted-foreground">
