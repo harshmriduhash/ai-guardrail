@@ -1,30 +1,108 @@
+import { useEffect, useState } from 'react';
 import { useDemoSession } from '@/context/DemoSessionContext';
-import { mockStats, mockRequests, mockPolicies } from '@/lib/mock-data';
+import { fetchPolicies, fetchRequests } from '@/lib/api';
+import { useRealtimeRequests, useRealtimeDecisions } from '@/hooks/useRealtime';
 import { StatusBadge, ReasonBadge } from '@/components/StatusBadge';
 import { 
   Shield, 
   AlertTriangle, 
   CheckCircle, 
   Activity,
-  ArrowRight 
+  ArrowRight,
+  Wifi,
+  Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 
+interface Policy {
+  id: string;
+  name: string;
+  policy_type: string;
+  enabled: boolean;
+}
+
+interface RequestWithDecision {
+  id: string;
+  model: string;
+  prompt: string;
+  tokens_requested: number;
+  created_at: string;
+  llm_decisions: Array<{
+    decision: 'ALLOW' | 'BLOCK';
+    reasons: string[];
+    cost_estimate: number;
+  }>;
+}
+
 export default function Dashboard() {
   const { session } = useDemoSession();
+  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [requests, setRequests] = useState<RequestWithDecision[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  const allowedCount = mockRequests.filter(r => r.decision.decision === 'ALLOW').length;
-  const blockedCount = mockRequests.filter(r => r.decision.decision === 'BLOCK').length;
-  const activePolicies = mockPolicies.filter(p => p.enabled).length;
+  // Real-time subscriptions
+  const { requests: realtimeRequests } = useRealtimeRequests();
+  const { decisions: realtimeDecisions } = useRealtimeDecisions();
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [policiesData, requestsData] = await Promise.all([
+          fetchPolicies(),
+          fetchRequests()
+        ]);
+        setPolicies(policiesData || []);
+        setRequests(requestsData || []);
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // Merge realtime data
+  const allRequests = [...realtimeRequests.map(r => ({
+    ...r,
+    llm_decisions: realtimeDecisions.has(r.id) 
+      ? [realtimeDecisions.get(r.id)!] 
+      : []
+  })), ...requests].slice(0, 50);
+
+  const allowedCount = allRequests.filter(r => r.llm_decisions?.[0]?.decision === 'ALLOW').length;
+  const blockedCount = allRequests.filter(r => r.llm_decisions?.[0]?.decision === 'BLOCK').length;
+  const activePolicies = policies.filter(p => p.enabled).length;
+
+  // Calculate violations by type
+  const violationsByType = allRequests
+    .filter(r => r.llm_decisions?.[0]?.decision === 'BLOCK')
+    .flatMap(r => r.llm_decisions?.[0]?.reasons || [])
+    .reduce((acc, reason) => {
+      acc[reason] = (acc[reason] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+  const totalViolations = Object.values(violationsByType).reduce((a, b) => a + b, 0);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
   
   return (
     <div className="p-8">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-2 text-muted-foreground text-sm font-mono mb-2">
+          <Wifi className="w-3 h-3 text-success" />
           <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-          DEMO SESSION ACTIVE
+          REALTIME CONNECTED
         </div>
         <h1 className="text-3xl font-bold mb-1">Governance Overview</h1>
         <p className="text-muted-foreground">
@@ -37,7 +115,7 @@ export default function Dashboard() {
         <MetricCard 
           icon={Activity} 
           label="Total Requests" 
-          value={mockRequests.length} 
+          value={allRequests.length} 
           color="primary"
         />
         <MetricCard 
@@ -70,16 +148,16 @@ export default function Dashboard() {
             </Link>
           </div>
           <div className="governance-card-body">
-            {Object.entries(mockStats.violationsByType).length > 0 ? (
+            {Object.keys(violationsByType).length > 0 ? (
               <div className="space-y-3">
-                {Object.entries(mockStats.violationsByType).map(([reason, count]) => (
+                {Object.entries(violationsByType).map(([reason, count]) => (
                   <div key={reason} className="flex items-center justify-between">
                     <ReasonBadge reason={reason as any} />
                     <div className="flex items-center gap-3 flex-1 ml-4">
                       <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-destructive/60 rounded-full"
-                          style={{ width: `${(count / mockStats.totalViolations) * 100}%` }}
+                          style={{ width: `${(count / totalViolations) * 100}%` }}
                         />
                       </div>
                       <span className="font-mono text-sm text-muted-foreground w-8 text-right">
@@ -90,7 +168,7 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground text-sm">No violations recorded</p>
+              <p className="text-muted-foreground text-sm">No violations recorded yet</p>
             )}
           </div>
         </div>
@@ -105,7 +183,7 @@ export default function Dashboard() {
           </div>
           <div className="governance-card-body p-0">
             <div className="divide-y divide-border">
-              {mockRequests.slice(0, 5).map((request) => (
+              {allRequests.slice(0, 5).map((request) => (
                 <div key={request.id} className="px-5 py-3 hover:bg-accent/30 transition-colors">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
@@ -116,14 +194,21 @@ export default function Dashboard() {
                         </span>
                         <span className="text-xs text-muted-foreground">•</span>
                         <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(request.createdAt, { addSuffix: true })}
+                          {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
                         </span>
                       </div>
                     </div>
-                    <StatusBadge decision={request.decision.decision} />
+                    {request.llm_decisions?.[0] && (
+                      <StatusBadge decision={request.llm_decisions[0].decision} />
+                    )}
                   </div>
                 </div>
               ))}
+              {allRequests.length === 0 && (
+                <div className="px-5 py-8 text-center text-muted-foreground">
+                  No requests yet. Use the Proxy Test to send your first request.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -139,15 +224,20 @@ export default function Dashboard() {
         </div>
         <div className="governance-card-body p-0">
           <div className="divide-y divide-border">
-            {mockPolicies.filter(p => p.enabled).map((policy) => (
+            {policies.filter(p => p.enabled).map((policy) => (
               <div key={policy.id} className="px-5 py-3 flex items-center justify-between">
                 <div>
                   <p className="font-medium">{policy.name}</p>
-                  <p className="text-xs text-muted-foreground font-mono">{policy.policyType}</p>
+                  <p className="text-xs text-muted-foreground font-mono">{policy.policy_type}</p>
                 </div>
                 <span className="w-2 h-2 rounded-full bg-success" />
               </div>
             ))}
+            {policies.filter(p => p.enabled).length === 0 && (
+              <div className="px-5 py-8 text-center text-muted-foreground">
+                No active policies
+              </div>
+            )}
           </div>
         </div>
       </div>

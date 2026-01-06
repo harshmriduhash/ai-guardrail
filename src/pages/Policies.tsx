@@ -1,8 +1,7 @@
-import { useState } from 'react';
-import { mockPolicies } from '@/lib/mock-data';
-import { Policy, PolicyType } from '@/types/governance';
+import { useState, useEffect } from 'react';
+import { fetchPolicies, togglePolicy, logAuditEvent } from '@/lib/api';
+import { useDemoSession } from '@/context/DemoSessionContext';
 import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
 import { 
   Dialog,
   DialogContent,
@@ -16,9 +15,23 @@ import {
   Ban, 
   DollarSign,
   ChevronRight,
-  Settings
+  Settings,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+
+type PolicyType = 'MODEL_RESTRICTION' | 'TOKEN_LIMIT' | 'PII_BLOCK' | 'PROMPT_KEYWORD_BLOCK' | 'COST_LIMIT';
+
+interface Policy {
+  id: string;
+  name: string;
+  policy_type: PolicyType;
+  config: Record<string, unknown>;
+  enabled: boolean;
+  priority: number;
+  created_at: string;
+}
 
 const policyIcons: Record<PolicyType, React.ElementType> = {
   MODEL_RESTRICTION: Shield,
@@ -37,14 +50,61 @@ const policyDescriptions: Record<PolicyType, string> = {
 };
 
 export default function Policies() {
-  const [policies, setPolicies] = useState<Policy[]>(mockPolicies);
+  const { session } = useDemoSession();
+  const [policies, setPolicies] = useState<Policy[]>([]);
   const [selectedPolicy, setSelectedPolicy] = useState<Policy | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  const togglePolicy = (id: string) => {
-    setPolicies(policies.map(p => 
-      p.id === id ? { ...p, enabled: !p.enabled } : p
-    ));
+  useEffect(() => {
+    loadPolicies();
+  }, []);
+
+  const loadPolicies = async () => {
+    try {
+      const data = await fetchPolicies();
+      setPolicies(data || []);
+    } catch (error) {
+      console.error('Failed to load policies:', error);
+      toast.error('Failed to load policies');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handleTogglePolicy = async (id: string, currentEnabled: boolean) => {
+    setTogglingId(id);
+    try {
+      const updated = await togglePolicy(id, !currentEnabled);
+      setPolicies(policies.map(p => p.id === id ? { ...p, enabled: updated.enabled } : p));
+      
+      // Log audit event
+      if (session) {
+        await logAuditEvent(
+          session.id,
+          'policy',
+          id,
+          updated.enabled ? 'POLICY_ENABLED' : 'POLICY_DISABLED',
+          { policy_name: policies.find(p => p.id === id)?.name }
+        );
+      }
+      
+      toast.success(`Policy ${updated.enabled ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      console.error('Failed to toggle policy:', error);
+      toast.error('Failed to update policy');
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
@@ -67,7 +127,7 @@ export default function Policies() {
         
         <div className="divide-y divide-border">
           {policies.map((policy) => {
-            const Icon = policyIcons[policy.policyType];
+            const Icon = policyIcons[policy.policy_type] || Shield;
             
             return (
               <div 
@@ -86,21 +146,25 @@ export default function Policies() {
                     <div className="flex items-center gap-2">
                       <h3 className="font-medium">{policy.name}</h3>
                       <span className="text-xs font-mono text-muted-foreground px-1.5 py-0.5 bg-secondary rounded">
-                        {policy.policyType}
+                        {policy.policy_type}
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {policyDescriptions[policy.policyType]}
+                      {policyDescriptions[policy.policy_type]}
                     </p>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-4">
-                  <Switch 
-                    checked={policy.enabled}
-                    onCheckedChange={() => togglePolicy(policy.id)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
+                  {togglingId === policy.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Switch 
+                      checked={policy.enabled}
+                      onCheckedChange={() => handleTogglePolicy(policy.id, policy.enabled)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  )}
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </div>
               </div>
@@ -117,7 +181,7 @@ export default function Policies() {
               {selectedPolicy && (
                 <>
                   {(() => {
-                    const Icon = policyIcons[selectedPolicy.policyType];
+                    const Icon = policyIcons[selectedPolicy.policy_type] || Shield;
                     return <Icon className="w-5 h-5 text-primary" />;
                   })()}
                   {selectedPolicy.name}
@@ -132,7 +196,7 @@ export default function Policies() {
                 <label className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
                   Policy Type
                 </label>
-                <p className="font-mono text-sm mt-1">{selectedPolicy.policyType}</p>
+                <p className="font-mono text-sm mt-1">{selectedPolicy.policy_type}</p>
               </div>
               
               <div>
@@ -157,7 +221,7 @@ export default function Policies() {
                 <Switch 
                   checked={selectedPolicy.enabled}
                   onCheckedChange={() => {
-                    togglePolicy(selectedPolicy.id);
+                    handleTogglePolicy(selectedPolicy.id, selectedPolicy.enabled);
                     setSelectedPolicy({
                       ...selectedPolicy,
                       enabled: !selectedPolicy.enabled
@@ -165,10 +229,6 @@ export default function Policies() {
                   }}
                 />
               </div>
-              
-              <p className="text-xs text-muted-foreground italic">
-                Configuration changes are read-only in demo mode.
-              </p>
             </div>
           )}
         </DialogContent>

@@ -1,73 +1,113 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { DemoSession, DemoAccessForm } from '@/types/governance';
+import { DemoAccessForm } from '@/types/governance';
+import { createDemoSession, fetchDemoSession, logAuditEvent } from '@/lib/api';
+import { toast } from 'sonner';
+
+interface DemoSessionData {
+  id: string;
+  name: string;
+  email: string;
+  company: string;
+  role: string;
+  expiresAt: Date;
+  createdAt: Date;
+  proxyCallCount: number;
+}
 
 interface DemoSessionContextType {
-  session: DemoSession | null;
-  createSession: (form: DemoAccessForm) => void;
+  session: DemoSessionData | null;
+  createSession: (form: DemoAccessForm) => Promise<void>;
   clearSession: () => void;
-  incrementProxyCount: () => void;
+  refreshSession: () => Promise<void>;
   isSessionValid: boolean;
   remainingCalls: number;
+  isLoading: boolean;
 }
 
 const DemoSessionContext = createContext<DemoSessionContextType | undefined>(undefined);
 
-const SESSION_KEY = 'governance_demo_session';
+const SESSION_KEY = 'governance_demo_session_id';
 
 export function DemoSessionProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<DemoSession | null>(null);
+  const [session, setSession] = useState<DemoSessionData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadSession = async (sessionId: string) => {
+    try {
+      const data = await fetchDemoSession(sessionId);
+      
+      const sessionData: DemoSessionData = {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        company: data.company,
+        role: data.role,
+        expiresAt: new Date(data.expires_at),
+        createdAt: new Date(data.created_at),
+        proxyCallCount: data.proxy_call_count
+      };
+
+      if (new Date() < sessionData.expiresAt) {
+        setSession(sessionData);
+        return true;
+      } else {
+        localStorage.removeItem(SESSION_KEY);
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to load session:', error);
+      localStorage.removeItem(SESSION_KEY);
+      return false;
+    }
+  };
 
   useEffect(() => {
-    const stored = localStorage.getItem(SESSION_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        const sessionData: DemoSession = {
-          ...parsed,
-          expiresAt: new Date(parsed.expiresAt),
-          createdAt: new Date(parsed.createdAt)
-        };
-        
-        if (new Date() < sessionData.expiresAt) {
-          setSession(sessionData);
-        } else {
-          localStorage.removeItem(SESSION_KEY);
-        }
-      } catch {
-        localStorage.removeItem(SESSION_KEY);
+    const initSession = async () => {
+      const storedId = localStorage.getItem(SESSION_KEY);
+      if (storedId) {
+        await loadSession(storedId);
       }
-    }
+      setIsLoading(false);
+    };
+
+    initSession();
   }, []);
 
-  const createSession = (form: DemoAccessForm) => {
-    const newSession: DemoSession = {
-      id: crypto.randomUUID(),
-      name: form.name,
-      email: form.email,
-      company: form.company,
-      role: form.role,
-      expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000), // 48 hours
-      createdAt: new Date(),
-      proxyCallCount: 0
-    };
-    
-    setSession(newSession);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
+  const createSession = async (form: DemoAccessForm) => {
+    try {
+      setIsLoading(true);
+      const response = await createDemoSession(form);
+      
+      localStorage.setItem(SESSION_KEY, response.demo_session_id);
+      await loadSession(response.demo_session_id);
+      
+      toast.success('Demo session created', {
+        description: 'You have 48 hours and 50 proxy calls to explore.'
+      });
+    } catch (error) {
+      console.error('Failed to create session:', error);
+      toast.error('Failed to create session', {
+        description: error instanceof Error ? error.message : 'Please try again'
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const clearSession = () => {
+    if (session) {
+      logAuditEvent(session.id, 'demo_session', session.id, 'SESSION_ENDED', {});
+    }
     setSession(null);
     localStorage.removeItem(SESSION_KEY);
+    toast.info('Demo session ended');
   };
 
-  const incrementProxyCount = () => {
-    if (session) {
-      const updated = {
-        ...session,
-        proxyCallCount: session.proxyCallCount + 1
-      };
-      setSession(updated);
-      localStorage.setItem(SESSION_KEY, JSON.stringify(updated));
+  const refreshSession = async () => {
+    const storedId = localStorage.getItem(SESSION_KEY);
+    if (storedId) {
+      await loadSession(storedId);
     }
   };
 
@@ -82,9 +122,10 @@ export function DemoSessionProvider({ children }: { children: ReactNode }) {
       session,
       createSession,
       clearSession,
-      incrementProxyCount,
+      refreshSession,
       isSessionValid,
-      remainingCalls
+      remainingCalls,
+      isLoading
     }}>
       {children}
     </DemoSessionContext.Provider>

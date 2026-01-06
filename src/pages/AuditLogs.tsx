@@ -1,9 +1,20 @@
-import { mockAuditLogs } from '@/lib/mock-data';
+import { useState, useEffect } from 'react';
+import { fetchAuditLogs } from '@/lib/api';
+import { useRealtimeAuditLogs } from '@/hooks/useRealtime';
 import { format } from 'date-fns';
-import { ScrollText, Search } from 'lucide-react';
+import { ScrollText, Search, Loader2, Wifi } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
+
+interface AuditLog {
+  id: string;
+  demo_session_id: string | null;
+  entity_type: string;
+  entity_id: string | null;
+  action: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
 
 const actionColors: Record<string, string> = {
   REQUEST_ALLOWED: 'border-l-success text-success',
@@ -11,22 +22,59 @@ const actionColors: Record<string, string> = {
   POLICY_DISABLED: 'border-l-warning text-warning',
   POLICY_ENABLED: 'border-l-success text-success',
   SESSION_CREATED: 'border-l-primary text-primary',
+  SESSION_ENDED: 'border-l-muted-foreground text-muted-foreground',
+  DASHBOARD_VIEWED: 'border-l-primary text-primary',
 };
 
 export default function AuditLogs() {
+  const [logs, setLogs] = useState<AuditLog[]>([]);
   const [search, setSearch] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Real-time subscription
+  const { logs: realtimeLogs } = useRealtimeAuditLogs();
+
+  useEffect(() => {
+    loadLogs();
+  }, []);
+
+  const loadLogs = async () => {
+    try {
+      const data = await fetchAuditLogs();
+      setLogs(data || []);
+    } catch (error) {
+      console.error('Failed to load audit logs:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Merge realtime logs with loaded logs
+  const allLogs = [...realtimeLogs, ...logs];
   
   const filteredLogs = search
-    ? mockAuditLogs.filter(log => 
+    ? allLogs.filter(log => 
         log.action.toLowerCase().includes(search.toLowerCase()) ||
-        log.entityType.toLowerCase().includes(search.toLowerCase()) ||
+        log.entity_type.toLowerCase().includes(search.toLowerCase()) ||
         JSON.stringify(log.metadata).toLowerCase().includes(search.toLowerCase())
       )
-    : mockAuditLogs;
+    : allLogs;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
       <div className="mb-8">
+        <div className="flex items-center gap-2 text-muted-foreground text-sm font-mono mb-2">
+          <Wifi className="w-3 h-3 text-success" />
+          LIVE STREAM
+        </div>
         <h1 className="text-3xl font-bold mb-1">Audit Logs</h1>
         <p className="text-muted-foreground">
           Immutable record of all governance events. SOC2-ready format.
@@ -54,12 +102,12 @@ export default function AuditLogs() {
             </span>
           </div>
           <span className="text-xs text-muted-foreground font-mono uppercase">
-            DEMO WATERMARK
+            DEMO SESSION
           </span>
         </div>
         
         <div className="log-viewer">
-          {filteredLogs.map((log, i) => (
+          {filteredLogs.map((log) => (
             <div 
               key={log.id} 
               className={cn(
@@ -69,13 +117,13 @@ export default function AuditLogs() {
             >
               <div className="flex items-start gap-4">
                 <span className="text-muted-foreground w-40 flex-shrink-0">
-                  {format(log.createdAt, 'yyyy-MM-dd HH:mm:ss')}
+                  {format(new Date(log.created_at), 'yyyy-MM-dd HH:mm:ss')}
                 </span>
                 <span className="w-32 flex-shrink-0 font-medium">
                   {log.action}
                 </span>
                 <span className="text-muted-foreground">
-                  {log.entityType}:{log.entityId.slice(0, 8)}
+                  {log.entity_type}:{log.entity_id?.slice(0, 8) || 'N/A'}
                 </span>
                 <span className="text-muted-foreground/60 flex-1 truncate">
                   {JSON.stringify(log.metadata)}
@@ -86,7 +134,7 @@ export default function AuditLogs() {
           
           {filteredLogs.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              No logs match your search.
+              {search ? 'No logs match your search.' : 'No audit logs yet.'}
             </div>
           )}
         </div>
