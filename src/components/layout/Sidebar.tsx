@@ -8,7 +8,8 @@ import {
   ScrollText, 
   Settings,
   Terminal,
-  LogOut
+  LogOut,
+  Book
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ const navItems = [
   { to: '/violations', icon: AlertTriangle, label: 'Violations' },
   { to: '/audit', icon: ScrollText, label: 'Audit Logs' },
   { to: '/proxy', icon: Settings, label: 'Proxy Test' },
+  { to: '/docs', icon: Book, label: 'API Docs' },
 ];
 
 export function Sidebar() {

@@ -12,6 +12,7 @@ import Requests from "./pages/Requests";
 import Violations from "./pages/Violations";
 import AuditLogs from "./pages/AuditLogs";
 import ProxyTest from "./pages/ProxyTest";
+import ApiDocs from "./pages/ApiDocs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const AppRoutes = () => (
       <Route path="/violations" element={<Violations />} />
       <Route path="/audit" element={<AuditLogs />} />
       <Route path="/proxy" element={<ProxyTest />} />
+      <Route path="/docs" element={<ApiDocs />} />
     </Route>
     <Route path="*" element={<NotFound />} />
   </Routes>

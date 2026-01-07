@@ -1,1 +1,7 @@
 project_id = "qaauvkwtywmwaaldofez"
+
+[functions.demo-access]
+verify_jwt = false
+
+[functions.llm-proxy]
+verify_jwt = false
