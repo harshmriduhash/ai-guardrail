@@ -37,8 +37,8 @@ export function Sidebar() {
             <Shield className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <span className="font-mono text-sm font-semibold text-sidebar-foreground">AI GOVERNANCE</span>
-            <span className="block text-xs text-muted-foreground font-mono">CONTROL PLANE</span>
+            <span className="font-mono text-sm font-semibold text-sidebar-foreground">POLICYSHIELD</span>
+            <span className="block text-xs text-muted-foreground font-mono">AI GOVERNANCE</span>
           </div>
         </div>
       </div>

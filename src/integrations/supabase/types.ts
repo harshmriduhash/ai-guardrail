@@ -23,6 +23,7 @@ export type Database = {
           entity_type: string
           id: string
           metadata: Json
+          user_id: string | null
         }
         Insert: {
           action: string
@@ -32,6 +33,7 @@ export type Database = {
           entity_type: string
           id?: string
           metadata?: Json
+          user_id?: string | null
         }
         Update: {
           action?: string
@@ -41,6 +43,7 @@ export type Database = {
           entity_type?: string
           id?: string
           metadata?: Json
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -134,6 +137,7 @@ export type Database = {
           model: string
           prompt: string
           tokens_requested: number
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -142,6 +146,7 @@ export type Database = {
           model: string
           prompt: string
           tokens_requested: number
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -150,6 +155,7 @@ export type Database = {
           model?: string
           prompt?: string
           tokens_requested?: number
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -194,14 +200,124 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          company: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          company?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          company?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          plan: Database["public"]["Enums"]["app_role"]
+          proxy_calls_limit: number
+          proxy_calls_used: number
+          status: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan?: Database["public"]["Enums"]["app_role"]
+          proxy_calls_limit?: number
+          proxy_calls_used?: number
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan?: Database["public"]["Enums"]["app_role"]
+          proxy_calls_limit?: number
+          proxy_calls_used?: number
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_plan_limits: {
+        Args: { _plan: Database["public"]["Enums"]["app_role"] }
+        Returns: {
+          models_allowed: string[]
+          proxy_calls_limit: number
+        }[]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "free" | "pro" | "enterprise"
       decision_type: "ALLOW" | "BLOCK"
       demo_role: "CTO" | "PLATFORM" | "ENGINEER" | "FOUNDER" | "OTHER"
       policy_type:
@@ -210,6 +326,7 @@ export type Database = {
         | "PII_BLOCK"
         | "PROMPT_KEYWORD_BLOCK"
         | "COST_LIMIT"
+      subscription_status: "active" | "cancelled" | "past_due" | "trialing"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -337,6 +454,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["free", "pro", "enterprise"],
       decision_type: ["ALLOW", "BLOCK"],
       demo_role: ["CTO", "PLATFORM", "ENGINEER", "FOUNDER", "OTHER"],
       policy_type: [
@@ -346,6 +464,7 @@ export const Constants = {
         "PROMPT_KEYWORD_BLOCK",
         "COST_LIMIT",
       ],
+      subscription_status: ["active", "cancelled", "past_due", "trialing"],
     },
   },
 } as const
