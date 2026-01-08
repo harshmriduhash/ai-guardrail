@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Shield, Mail, Lock, User, Building, ArrowLeft, Loader2 } from 'lucide-react';
+import { Shield, Mail, Lock, User, Building, ArrowLeft, Loader2, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 
@@ -31,14 +31,12 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   
-  // Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [company, setCompany] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Check if already logged in
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
@@ -174,43 +172,50 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-card border-r border-border flex-col justify-between p-12">
-        <div>
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-primary" />
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0 bg-card" />
+        <div className="absolute inset-0 bg-gradient-spotlight" />
+        <div className="absolute inset-0 dot-grid opacity-20" />
+        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-gradient-radial blur-3xl" />
+        
+        <div className="relative flex flex-col justify-between p-12 z-10">
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg shadow-primary/20">
+              <Shield className="w-5 h-5 text-white" />
             </div>
             <span className="font-semibold text-xl text-foreground">PolicyShield</span>
           </Link>
-        </div>
 
-        <div className="space-y-6">
-          <h1 className="text-4xl font-bold text-foreground leading-tight">
-            Secure Your AI.
-            <span className="block text-primary">Control Everything.</span>
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-md">
-            Join hundreds of companies using PolicyShield to govern their LLM deployments with enterprise-grade security.
-          </p>
-          
-          <div className="grid grid-cols-2 gap-4 pt-8">
-            {[
-              { value: '100', label: 'Free API calls/mo' },
-              { value: '<15ms', label: 'Avg latency' },
-              { value: 'SOC 2', label: 'Compliant' },
-              { value: '99.9%', label: 'Uptime' },
-            ].map((stat, i) => (
-              <div key={i} className="bg-muted/30 rounded-lg p-4">
-                <p className="text-xl font-bold text-foreground font-mono">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-              </div>
-            ))}
+          <div className="space-y-8">
+            <h1 className="text-5xl font-bold leading-tight">
+              <span className="text-foreground">Secure Your AI.</span>
+              <br />
+              <span className="gradient-text">Control Everything.</span>
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-md">
+              Join hundreds of companies using PolicyShield to govern their LLM deployments with enterprise-grade security.
+            </p>
+            
+            <div className="grid grid-cols-2 gap-4 pt-4">
+              {[
+                { value: '100', label: 'Free API calls/mo' },
+                { value: '<15ms', label: 'Avg latency' },
+                { value: 'SOC 2', label: 'Compliant' },
+                { value: '99.9%', label: 'Uptime' },
+              ].map((stat, i) => (
+                <div key={i} className="bg-muted/30 rounded-xl p-4 border border-border/50">
+                  <p className="text-2xl font-bold gradient-text font-mono">{stat.value}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <p className="text-sm text-muted-foreground">
-          © {new Date().getFullYear()} PolicyShield. All rights reserved.
-        </p>
+          <p className="text-sm text-muted-foreground">
+            © {new Date().getFullYear()} PolicyShield. All rights reserved.
+          </p>
+        </div>
       </div>
 
       {/* Right Panel - Auth Form */}
@@ -218,20 +223,20 @@ export default function Auth() {
         <div className="w-full max-w-md">
           <Link 
             to="/" 
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8 lg:hidden"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to home
           </Link>
 
-          <div className="lg:hidden flex items-center gap-2.5 mb-8">
-            <div className="w-9 h-9 rounded-lg bg-primary/20 flex items-center justify-center">
-              <Shield className="w-4.5 h-4.5 text-primary" />
+          <div className="lg:hidden flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center">
+              <Shield className="w-5 h-5 text-white" />
             </div>
             <span className="font-semibold text-lg text-foreground">PolicyShield</span>
           </div>
 
-          <h2 className="text-2xl font-bold text-foreground mb-2">
+          <h2 className="text-3xl font-bold text-foreground mb-2">
             {mode === 'signup' ? 'Create your account' : 'Welcome back'}
           </h2>
           <p className="text-muted-foreground mb-8">
@@ -243,14 +248,14 @@ export default function Auth() {
           {/* Google OAuth */}
           <Button 
             variant="outline" 
-            className="w-full mb-6" 
+            className="w-full h-12 mb-6 border-border/50 hover:bg-accent hover:border-border" 
             onClick={handleGoogleSignIn}
             disabled={googleLoading}
           >
             {googleLoading ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (
-              <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path
                   fill="currentColor"
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -277,7 +282,7 @@ export default function Auth() {
               <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
+              <span className="bg-background px-3 text-muted-foreground">Or continue with email</span>
             </div>
           </div>
 
@@ -285,7 +290,7 @@ export default function Auth() {
             {mode === 'signup' && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
+                  <Label htmlFor="fullName" className="text-sm font-medium">Full Name</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -294,7 +299,7 @@ export default function Auth() {
                       placeholder="John Doe"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 h-12 bg-muted/30 border-border/50 focus:border-primary"
                     />
                   </div>
                   {errors.fullName && (
@@ -303,7 +308,7 @@ export default function Auth() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="company">Company (optional)</Label>
+                  <Label htmlFor="company" className="text-sm font-medium">Company (optional)</Label>
                   <div className="relative">
                     <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -312,7 +317,7 @@ export default function Auth() {
                       placeholder="Acme Inc"
                       value={company}
                       onChange={(e) => setCompany(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 h-12 bg-muted/30 border-border/50 focus:border-primary"
                     />
                   </div>
                 </div>
@@ -320,7 +325,7 @@ export default function Auth() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -329,7 +334,7 @@ export default function Auth() {
                   placeholder="you@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-12 bg-muted/30 border-border/50 focus:border-primary"
                 />
               </div>
               {errors.email && (
@@ -338,7 +343,7 @@ export default function Auth() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -347,7 +352,7 @@ export default function Auth() {
                   placeholder={mode === 'signup' ? 'Min 8 characters' : '••••••••'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-12 bg-muted/30 border-border/50 focus:border-primary"
                 />
               </div>
               {errors.password && (
@@ -355,9 +360,16 @@ export default function Auth() {
               )}
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            <Button 
+              type="submit" 
+              className="w-full h-12 bg-gradient-primary hover:opacity-90 transition-opacity border-0 text-base font-medium" 
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : null}
               {mode === 'signup' ? 'Create Account' : 'Sign In'}
+              <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </form>
 
@@ -367,7 +379,7 @@ export default function Auth() {
                 Already have an account?{' '}
                 <button 
                   onClick={() => setMode('signin')}
-                  className="text-primary hover:underline"
+                  className="text-primary hover:underline font-medium"
                 >
                   Sign in
                 </button>
@@ -377,7 +389,7 @@ export default function Auth() {
                 Don't have an account?{' '}
                 <button 
                   onClick={() => setMode('signup')}
-                  className="text-primary hover:underline"
+                  className="text-primary hover:underline font-medium"
                 >
                   Sign up free
                 </button>
@@ -388,9 +400,9 @@ export default function Auth() {
           {mode === 'signup' && (
             <p className="text-xs text-muted-foreground text-center mt-4">
               By signing up, you agree to our{' '}
-              <a href="#" className="underline">Terms of Service</a>{' '}
+              <a href="#" className="underline hover:text-foreground">Terms of Service</a>{' '}
               and{' '}
-              <a href="#" className="underline">Privacy Policy</a>.
+              <a href="#" className="underline hover:text-foreground">Privacy Policy</a>.
             </p>
           )}
         </div>
