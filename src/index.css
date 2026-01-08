@@ -2,35 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @layer base {
   :root {
-    /* Enterprise dark theme - internal tool aesthetic */
-    --background: 220 20% 6%;
-    --foreground: 210 20% 92%;
+    /* Pure black premium theme - inspired by chutes.ai / mues.ai */
+    --background: 0 0% 3%;
+    --foreground: 0 0% 98%;
 
-    --card: 220 18% 9%;
-    --card-foreground: 210 20% 92%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 220 18% 9%;
-    --popover-foreground: 210 20% 92%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 98%;
 
-    /* Primary - cool blue for actions */
-    --primary: 210 100% 52%;
+    /* Primary - vibrant gradient accent */
+    --primary: 220 100% 60%;
     --primary-foreground: 0 0% 100%;
+    
+    /* Gradient colors for primary accents */
+    --primary-gradient-from: 280 100% 65%;
+    --primary-gradient-via: 320 100% 60%;
+    --primary-gradient-to: 350 100% 65%;
 
     /* Secondary - subtle surface */
-    --secondary: 220 16% 14%;
-    --secondary-foreground: 210 20% 85%;
+    --secondary: 0 0% 9%;
+    --secondary-foreground: 0 0% 85%;
 
-    --muted: 220 14% 12%;
-    --muted-foreground: 215 15% 55%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 55%;
 
-    --accent: 220 16% 18%;
-    --accent-foreground: 210 20% 92%;
+    --accent: 0 0% 14%;
+    --accent-foreground: 0 0% 98%;
 
-    /* Status colors - governance critical */
+    /* Status colors */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
@@ -40,31 +45,35 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 0%;
 
-    --border: 220 14% 16%;
-    --input: 220 14% 16%;
-    --ring: 210 100% 52%;
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
+    --ring: 220 100% 60%;
 
-    --radius: 0.375rem;
+    --radius: 0.75rem;
 
-    /* Custom tokens for governance UI */
+    /* Custom tokens */
     --status-allow: 142 71% 45%;
     --status-block: 0 72% 51%;
     --status-pending: 38 92% 50%;
     
-    --surface-elevated: 220 16% 11%;
-    --surface-sunken: 220 20% 5%;
+    --surface-elevated: 0 0% 8%;
+    --surface-sunken: 0 0% 2%;
     
     --text-code: 180 60% 70%;
-    --text-dim: 215 15% 45%;
+    --text-dim: 0 0% 40%;
+    
+    /* Glass effect */
+    --glass: 0 0% 6% / 0.8;
+    --glass-border: 0 0% 20%;
 
-    --sidebar-background: 220 18% 7%;
-    --sidebar-foreground: 210 20% 85%;
-    --sidebar-primary: 210 100% 52%;
+    --sidebar-background: 0 0% 4%;
+    --sidebar-foreground: 0 0% 85%;
+    --sidebar-primary: 220 100% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 16% 14%;
-    --sidebar-accent-foreground: 210 20% 92%;
-    --sidebar-border: 220 14% 14%;
-    --sidebar-ring: 210 100% 52%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 10%;
+    --sidebar-ring: 220 100% 60%;
   }
 }
 
@@ -82,9 +91,85 @@
   code, .font-mono, .data-cell {
     font-family: 'JetBrains Mono', monospace;
   }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
 }
 
 @layer components {
+  /* Gradient text */
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(var(--primary-gradient-from)), hsl(var(--primary-gradient-via)), hsl(var(--primary-gradient-to)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Gradient border */
+  .gradient-border {
+    position: relative;
+    background: hsl(var(--card));
+    border-radius: var(--radius);
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, hsl(var(--primary-gradient-from) / 0.5), hsl(var(--primary-gradient-via) / 0.3), hsl(var(--primary-gradient-to) / 0.5));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Glow effect */
+  .glow {
+    box-shadow: 0 0 60px -15px hsl(var(--primary) / 0.3);
+  }
+
+  .glow-sm {
+    box-shadow: 0 0 30px -10px hsl(var(--primary) / 0.2);
+  }
+
+  /* Glass morphism */
+  .glass {
+    background: hsl(var(--glass));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--glass-border));
+  }
+
+  /* Announcement bar */
+  .announcement-bar {
+    @apply overflow-hidden whitespace-nowrap;
+    animation: scroll 30s linear infinite;
+  }
+
+  @keyframes scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
   /* Status badges */
   .status-allow {
     @apply bg-success/15 text-success border border-success/30;
@@ -117,7 +202,7 @@
 
   /* Terminal-style log viewer */
   .log-viewer {
-    @apply bg-surface-sunken rounded-md p-4 font-mono text-xs overflow-auto max-h-96;
+    @apply bg-surface-sunken rounded-lg p-4 font-mono text-xs overflow-auto max-h-96;
   }
   
   .log-entry {
@@ -136,31 +221,52 @@
     @apply border-l-primary text-muted-foreground;
   }
 
-  /* Card variants for governance */
+  /* Governance cards */
   .governance-card {
-    @apply bg-card border border-border rounded-lg;
+    @apply bg-card border border-border rounded-xl overflow-hidden;
   }
   
   .governance-card-header {
-    @apply px-5 py-4 border-b border-border flex items-center justify-between;
+    @apply px-6 py-4 border-b border-border flex items-center justify-between;
   }
   
   .governance-card-body {
-    @apply p-5;
+    @apply p-6;
   }
 
   /* Metric display */
   .metric-value {
-    @apply text-3xl font-semibold font-mono tracking-tight;
+    @apply text-4xl font-bold font-mono tracking-tight;
   }
   
   .metric-label {
-    @apply text-xs uppercase tracking-wider text-muted-foreground mt-1;
+    @apply text-xs uppercase tracking-widest text-muted-foreground mt-2;
   }
 
   /* Policy toggle */
   .policy-row {
-    @apply flex items-center justify-between py-4 px-5 border-b border-border/50 hover:bg-accent/20 transition-colors;
+    @apply flex items-center justify-between py-4 px-6 border-b border-border/50 hover:bg-accent/20 transition-colors;
+  }
+
+  /* Feature card hover effect */
+  .feature-card {
+    @apply relative overflow-hidden transition-all duration-500;
+  }
+
+  .feature-card::before {
+    content: '';
+    @apply absolute inset-0 opacity-0 transition-opacity duration-500;
+    background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), hsl(var(--primary) / 0.06), transparent 40%);
+  }
+
+  .feature-card:hover::before {
+    @apply opacity-100;
+  }
+
+  /* Dot grid background */
+  .dot-grid {
+    background-image: radial-gradient(circle, hsl(var(--muted)) 1px, transparent 1px);
+    background-size: 24px 24px;
   }
 }
 
@@ -205,7 +311,6 @@
     color: hsl(var(--text-dim));
   }
 
-  /* Border utilities for status */
   .border-l-success {
     border-left-color: hsl(var(--success));
   }
@@ -216,5 +321,18 @@
   
   .border-l-primary {
     border-left-color: hsl(var(--primary));
+  }
+
+  /* Gradient utilities */
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary-gradient-from)), hsl(var(--primary-gradient-via)), hsl(var(--primary-gradient-to)));
+  }
+
+  .bg-gradient-radial {
+    background: radial-gradient(ellipse at center, hsl(var(--primary) / 0.15) 0%, transparent 70%);
+  }
+
+  .bg-gradient-spotlight {
+    background: radial-gradient(ellipse 80% 50% at 50% -20%, hsl(var(--primary) / 0.2) 0%, transparent 70%);
   }
 }

@@ -15,15 +15,16 @@ import FeaturesPage from "./pages/FeaturesPage";
 import PricingPage from "./pages/PricingPage";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Analytics from "./pages/Analytics";
 import Policies from "./pages/Policies";
 import Requests from "./pages/Requests";
 import Violations from "./pages/Violations";
 import AuditLogs from "./pages/AuditLogs";
 import ProxyTest from "./pages/ProxyTest";
 import ApiDocs from "./pages/ApiDocs";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
-// Demo gate for non-authenticated demo access
 import { DemoGate } from "@/components/DemoGate";
 
 const queryClient = new QueryClient();
@@ -53,7 +54,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     </div>;
   }
 
-  // Allow access if user is authenticated OR has valid demo session
   if (!user && !isSessionValid) {
     return <Navigate to="/auth" replace />;
   }
@@ -73,12 +73,14 @@ const AppRoutes = () => (
     {/* Protected dashboard routes */}
     <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/analytics" element={<Analytics />} />
       <Route path="/policies" element={<Policies />} />
       <Route path="/requests" element={<Requests />} />
       <Route path="/violations" element={<Violations />} />
       <Route path="/audit" element={<AuditLogs />} />
       <Route path="/proxy" element={<ProxyTest />} />
       <Route path="/docs" element={<ApiDocs />} />
+      <Route path="/settings" element={<Settings />} />
     </Route>
 
     <Route path="*" element={<NotFound />} />
