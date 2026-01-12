@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Check, Sparkles, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 const plans = [
   {
@@ -62,36 +63,73 @@ const plans = [
   }
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.5 }
+  },
+};
+
 export function Pricing() {
   return (
-    <section id="pricing" className="py-32 relative">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-20">
-          <p className="text-sm font-medium text-primary uppercase tracking-widest mb-4">Pricing</p>
-          <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-6">
-            Simple, Transparent
+    <section id="pricing" className="py-32 relative overflow-hidden">
+      <div className="absolute inset-0 hero-gradient opacity-50" />
+      
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-20"
+        >
+          <span className="inline-flex items-center gap-2 pill-button mb-6">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <span>Simple Pricing</span>
+          </span>
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6">
+            Transparent
             <br />
             <span className="gradient-text">Pricing</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Start free, upgrade when you need more. No hidden fees, no surprises.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <motion.div 
+          className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto"
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+        >
           {plans.map((plan, i) => (
-            <div 
+            <motion.div 
               key={i}
+              variants={itemVariants}
               className={cn(
-                'relative rounded-2xl p-8 flex flex-col transition-all duration-300',
+                'relative rounded-3xl p-8 flex flex-col transition-all duration-500',
                 plan.highlighted 
-                  ? 'gradient-border glow-sm bg-card' 
-                  : 'border border-border bg-card hover:border-border/80'
+                  ? 'gradient-border glow bg-card scale-105 md:scale-110' 
+                  : 'border border-border bg-card hover:border-primary/30'
               )}
             >
               {plan.highlighted && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <div className="inline-flex items-center gap-1.5 bg-gradient-primary text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow-lg">
+                  <div className="inline-flex items-center gap-1.5 bg-gradient-primary text-primary-foreground text-xs font-semibold px-4 py-1.5 rounded-full shadow-lg">
                     <Sparkles className="w-3.5 h-3.5" />
                     Most Popular
                   </div>
@@ -123,8 +161,8 @@ export function Pricing() {
               <Button 
                 variant={plan.highlighted ? 'default' : 'outline'} 
                 className={cn(
-                  'w-full h-11',
-                  plan.highlighted && 'bg-gradient-primary hover:opacity-90 border-0'
+                  'w-full h-12 rounded-xl font-semibold',
+                  plan.highlighted && 'bg-gradient-primary hover:opacity-90 border-0 shadow-lg shadow-primary/20'
                 )}
                 asChild
               >
@@ -133,15 +171,21 @@ export function Pricing() {
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
-        <div className="mt-16 text-center">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.5 }}
+          className="mt-16 text-center"
+        >
           <p className="text-sm text-muted-foreground">
             All plans include SSL encryption, 99.9% uptime SLA, and GDPR compliance.
           </p>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

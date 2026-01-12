@@ -175,8 +175,9 @@ export default function Auth() {
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         {/* Background effects */}
         <div className="absolute inset-0 bg-card" />
-        <div className="absolute inset-0 bg-gradient-spotlight" />
+        <div className="absolute inset-0 hero-gradient" />
         <div className="absolute inset-0 dot-grid opacity-20" />
+        <div className="light-beam opacity-40" />
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-gradient-radial blur-3xl" />
         
         <div className="relative flex flex-col justify-between p-12 z-10">
