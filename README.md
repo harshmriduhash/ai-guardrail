@@ -6,7 +6,7 @@
 
 ## 🎯 Summary
 
-PolicyShield is a SaaS platform that sits between your applications and LLM providers, enforcing security policies, blocking sensitive data, and providing audit-grade visibility into every AI request. Built for security teams, platform engineers, and compliance officers.
+PolicyShield is a premium SaaS platform that sits between your applications and LLM providers, enforcing security policies, blocking sensitive data, and providing audit-grade visibility into every AI request. Built for security teams, platform engineers, and compliance officers.
 
 ---
 
@@ -19,6 +19,7 @@ PolicyShield is a SaaS platform that sits between your applications and LLM prov
 - **Cost Control** — Budget limits per request/user, cost estimates before execution
 - **Sub-15ms Latency** — Edge-deployed policy engine with minimal overhead
 - **Universal Proxy** — Single integration for OpenAI, Anthropic, Google, and more
+- **User Onboarding** — Step-by-step wizard for new users
 - **Freemium Model** — 100 free API calls/month, upgrade for more
 
 ---
@@ -29,6 +30,7 @@ PolicyShield is a SaaS platform that sits between your applications and LLM prov
 |-------|------------|
 | Frontend | React 18, TypeScript, Vite |
 | Styling | Tailwind CSS, shadcn/ui |
+| Animations | Framer Motion |
 | State | TanStack Query, React Context |
 | Auth | Supabase Auth (Email + Google OAuth) |
 | Backend | Supabase Edge Functions (Deno) |
@@ -38,13 +40,29 @@ PolicyShield is a SaaS platform that sits between your applications and LLM prov
 
 ---
 
+## 🎨 Design System
+
+### Visual Aesthetic
+- **Theme**: Premium dark/black inspired by huly.io, Stripe, Clay
+- **Typography**: Sora for headings, Inter for body, JetBrains Mono for code
+- **Colors**: Warm amber/orange primary (#F59E0B), subtle glass effects
+- **Effects**: Light beam animations, gradient orbs, spotlight hover effects, glassmorphism
+
+### Key Components
+- `Hero` — Full-screen landing with animated dashboard preview
+- `Features` — 9-card bento grid with spotlight hover effects
+- `Pricing` — 3-tier pricing with highlighted "Pro" plan
+- `OnboardingWizard` — 4-step guided setup for new users
+
+---
+
 ## 📐 System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                     POLICYSHIELD PLATFORM                        │
 ├─────────────────────────────────────────────────────────────────┤
-│  Landing Page → Auth (Email/Google) → Dashboard                  │
+│  Landing Page → Auth (Email/Google) → Onboarding → Dashboard    │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -103,13 +121,17 @@ audit_logs (entity_type, entity_id, action, metadata)
 ## ✅ MVP Checklist
 
 - [x] Landing page with hero, features, pricing
+- [x] Premium dark theme with animations
 - [x] Responsive navbar and footer
 - [x] Email + Google OAuth authentication
+- [x] User onboarding wizard
 - [x] User profiles and subscription tiers
 - [x] Freemium access model (100 free calls)
 - [x] Policy engine with 5 policy types
 - [x] LLM proxy with real-time evaluation
 - [x] Dashboard with request/violation metrics
+- [x] Analytics page with charts
+- [x] Settings page
 - [x] Audit log viewer
 - [x] API documentation page
 - [x] Demo mode for unauthenticated trials
@@ -138,6 +160,7 @@ audit_logs (entity_type, entity_id, action, metadata)
 │   ├── components/
 │   │   ├── landing/      # Navbar, Footer, Hero, Features, Pricing, CTA
 │   │   ├── layout/       # Dashboard layout, Sidebar
+│   │   ├── onboarding/   # OnboardingWizard
 │   │   └── ui/           # shadcn/ui components
 │   ├── context/          # Auth and session providers
 │   ├── hooks/            # Custom React hooks

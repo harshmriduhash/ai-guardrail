@@ -10,63 +10,92 @@ import {
   BarChart3
 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 
 const features = [
   {
     icon: Shield,
     title: 'Policy Enforcement',
     description: 'Define and enforce granular policies across all LLM requests. Block risky models, limit tokens, and control costs in real-time.',
-    gradient: 'from-blue-500/20 to-cyan-500/20'
+    color: 'from-primary/20 to-amber-500/10',
+    iconColor: 'text-primary'
   },
   {
     icon: Lock,
     title: 'PII Protection',
     description: 'Automatically detect and block prompts containing emails, phone numbers, SSNs, credit cards, and other sensitive data patterns.',
-    gradient: 'from-purple-500/20 to-pink-500/20'
+    color: 'from-purple-500/20 to-pink-500/10',
+    iconColor: 'text-purple-400'
   },
   {
     icon: Eye,
     title: 'Full Visibility',
     description: 'See every LLM request across your organization. Real-time dashboards, request logs, and detailed analytics.',
-    gradient: 'from-green-500/20 to-emerald-500/20'
+    color: 'from-emerald-500/20 to-teal-500/10',
+    iconColor: 'text-emerald-400'
   },
   {
     icon: FileCheck,
     title: 'Audit-Ready Logs',
     description: 'Immutable, append-only audit trail for SOC 2, ISO 27001, and GDPR compliance. Export anytime for security reviews.',
-    gradient: 'from-orange-500/20 to-amber-500/20'
+    color: 'from-orange-500/20 to-amber-500/10',
+    iconColor: 'text-orange-400'
   },
   {
     icon: DollarSign,
     title: 'Cost Control',
     description: 'Set budget limits per request, user, or department. Get cost estimates before execution and prevent runaway AI spending.',
-    gradient: 'from-teal-500/20 to-green-500/20'
+    color: 'from-green-500/20 to-emerald-500/10',
+    iconColor: 'text-green-400'
   },
   {
     icon: Zap,
     title: 'Sub-15ms Latency',
     description: 'Edge-deployed policy engine adds minimal overhead. Policy evaluation completes in under 15ms for seamless integration.',
-    gradient: 'from-yellow-500/20 to-orange-500/20'
+    color: 'from-yellow-500/20 to-orange-500/10',
+    iconColor: 'text-yellow-400'
   },
   {
     icon: Server,
     title: 'Universal Proxy',
     description: 'Single integration point for OpenAI, Anthropic, Google, and more. Switch providers without changing code.',
-    gradient: 'from-indigo-500/20 to-purple-500/20'
+    color: 'from-blue-500/20 to-indigo-500/10',
+    iconColor: 'text-blue-400'
   },
   {
     icon: AlertTriangle,
     title: 'Keyword Blocking',
     description: 'Block prompts containing sensitive terms like "password", "internal docs", or custom keywords.',
-    gradient: 'from-red-500/20 to-pink-500/20'
+    color: 'from-red-500/20 to-rose-500/10',
+    iconColor: 'text-red-400'
   },
   {
     icon: BarChart3,
     title: 'Usage Analytics',
     description: 'Understand AI usage patterns, identify heavy users, and optimize costs with detailed breakdowns.',
-    gradient: 'from-cyan-500/20 to-blue-500/20'
+    color: 'from-cyan-500/20 to-sky-500/10',
+    iconColor: 'text-cyan-400'
   }
 ];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.5 }
+  },
+};
 
 export function Features() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -91,13 +120,23 @@ export function Features() {
   }, []);
 
   return (
-    <section id="features" className="py-32 relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-background via-card/50 to-background" />
+    <section id="features" className="py-32 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-card/30 to-background" />
+      <div className="absolute inset-0 grid-pattern opacity-30" />
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-20">
-          <p className="text-sm font-medium text-primary uppercase tracking-widest mb-4">Features</p>
-          <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-20"
+        >
+          <span className="inline-flex items-center gap-2 pill-button mb-6">
+            <Zap className="w-4 h-4 text-primary" />
+            <span>Powerful Features</span>
+          </span>
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
             Everything You Need to
             <br />
             <span className="gradient-text">Govern AI</span>
@@ -106,26 +145,34 @@ export function Features() {
             Built for security teams, platform engineers, and compliance officers who need 
             enterprise-grade control over LLM deployments.
           </p>
-        </div>
+        </motion.div>
 
-        <div ref={containerRef} className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <motion.div 
+          ref={containerRef} 
+          className="grid md:grid-cols-2 lg:grid-cols-3 gap-5"
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+        >
           {features.map((feature, i) => (
-            <div 
+            <motion.div 
               key={i}
-              className="feature-card group p-6 bg-card rounded-xl border border-border hover:border-primary/30 transition-all duration-300"
+              variants={itemVariants}
+              className="feature-card group p-7"
             >
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}>
-                <feature.icon className="w-6 h-6 text-foreground" />
+              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}>
+                <feature.icon className={`w-7 h-7 ${feature.iconColor}`} />
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">
+              <h3 className="text-xl font-semibold text-foreground mb-3">
                 {feature.title}
               </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed">
                 {feature.description}
               </p>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
