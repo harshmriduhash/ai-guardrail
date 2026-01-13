@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { ArrowUp, ArrowDown, Activity, Shield, DollarSign, Clock } from 'lucide-react';
 
@@ -27,6 +28,16 @@ const violationTypes = [
   { type: 'Model Restriction', count: 12 },
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+} as const;
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+} as const;
+
 export default function Analytics() {
   const metrics = useMemo(() => [
     { label: 'Total Requests', value: '11,400', change: '+23%', positive: true, icon: Activity },
@@ -36,16 +47,15 @@ export default function Analytics() {
   ], []);
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
+    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="p-8">
+      <motion.div variants={itemVariants} className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Analytics</h1>
         <p className="text-muted-foreground">Monitor your AI usage and governance metrics.</p>
-      </div>
+      </motion.div>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {metrics.map((metric, i) => (
-          <div key={i} className="governance-card p-6">
+          <motion.div key={i} className="governance-card p-6" whileHover={{ scale: 1.02, y: -4 }} transition={{ duration: 0.2 }}>
             <div className="flex items-start justify-between mb-4">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <metric.icon className="w-5 h-5 text-primary" />
@@ -55,15 +65,16 @@ export default function Analytics() {
                 {metric.change}
               </span>
             </div>
-            <p className="metric-value">{metric.value}</p>
+            <motion.p className="metric-value" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 + i * 0.1, duration: 0.4 }}>
+              {metric.value}
+            </motion.p>
             <p className="metric-label">{metric.label}</p>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        {/* Requests Over Time */}
-        <div className="lg:col-span-2 governance-card">
+      <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <motion.div className="lg:col-span-2 governance-card" whileHover={{ scale: 1.005 }} transition={{ duration: 0.2 }}>
           <div className="governance-card-header">
             <h2 className="font-semibold">Requests Over Time</h2>
             <span className="text-sm text-muted-foreground">Last 7 days</span>
@@ -85,23 +96,16 @@ export default function Analytics() {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 12%)" />
                   <XAxis dataKey="date" stroke="hsl(0, 0%, 40%)" fontSize={12} />
                   <YAxis stroke="hsl(0, 0%, 40%)" fontSize={12} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(0, 0%, 6%)', 
-                      border: '1px solid hsl(0, 0%, 12%)',
-                      borderRadius: '8px'
-                    }}
-                  />
+                  <Tooltip contentStyle={{ backgroundColor: 'hsl(0, 0%, 6%)', border: '1px solid hsl(0, 0%, 12%)', borderRadius: '8px' }} />
                   <Area type="monotone" dataKey="requests" stroke="hsl(220, 100%, 60%)" fill="url(#colorRequests)" strokeWidth={2} />
                   <Area type="monotone" dataKey="blocked" stroke="hsl(0, 72%, 51%)" fill="url(#colorBlocked)" strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Model Usage */}
-        <div className="governance-card">
+        <motion.div className="governance-card" whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
           <div className="governance-card-header">
             <h2 className="font-semibold">Model Usage</h2>
           </div>
@@ -109,15 +113,7 @@ export default function Analytics() {
             <div className="h-48 mb-4">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie
-                    data={modelUsage}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={70}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
+                  <Pie data={modelUsage} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={4} dataKey="value">
                     {modelUsage.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
@@ -137,11 +133,10 @@ export default function Analytics() {
               ))}
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
-      {/* Violations by Type */}
-      <div className="governance-card">
+      <motion.div variants={itemVariants} className="governance-card" whileHover={{ scale: 1.002 }} transition={{ duration: 0.2 }}>
         <div className="governance-card-header">
           <h2 className="font-semibold">Violations by Type</h2>
           <span className="text-sm text-muted-foreground">This week</span>
@@ -153,19 +148,13 @@ export default function Analytics() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 12%)" />
                 <XAxis type="number" stroke="hsl(0, 0%, 40%)" fontSize={12} />
                 <YAxis dataKey="type" type="category" stroke="hsl(0, 0%, 40%)" fontSize={12} width={120} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(0, 0%, 6%)', 
-                    border: '1px solid hsl(0, 0%, 12%)',
-                    borderRadius: '8px'
-                  }}
-                />
+                <Tooltip contentStyle={{ backgroundColor: 'hsl(0, 0%, 6%)', border: '1px solid hsl(0, 0%, 12%)', borderRadius: '8px' }} />
                 <Bar dataKey="count" fill="hsl(0, 72%, 51%)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
