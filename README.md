@@ -1,4 +1,4 @@
-# PolicyShield
+# PolicyShield, an AI Infrastructure Product.
 
 > Enterprise AI Governance Platform — Secure, govern, and control your AI at scale.
 
